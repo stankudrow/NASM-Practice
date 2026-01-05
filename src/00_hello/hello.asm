@@ -14,7 +14,14 @@
 ; - the E prefix for 32-bit (x86) versions (introduced with the Intel 80386);
 ; - the R prefix for 64-bit (x64) versions (introduced with AMD64/x86_64).
 ;
-; Kinds of variables:
+; In assembly language, a symbol is a human‑readable name that represents
+; a memory address, constant value or code location known to the assembler.
+; It’s the assembly‑level equivalent of a “variable name” or “label” in higher‑level languages.
+; Examples:
+; - `var` means the address that is accessible via the var name;
+; - `[var]` means the value at the addres of the var symbol.
+;
+; Kinds of labels (scope/visibility):
 ; - global:
 ;   - visible across multiple source files (translation units);
 ;   - have external linkage (other files can reference them via `extern`);
@@ -24,8 +31,7 @@
 ;   - internal linkage, i.e., cannot be referenced from other files.
 ;
 ; Typically, a program has sections (segments) that organise code and data in memory.
-; The core sections are `.bss`, `.data` and `.text`.
-; Program sections (segments):
+; The core sections are:
 ; - `.bss`:
 ;   - Holds uninitialized/zero-initialized global/static variables;
 ;   - These varaibles are zeroed by OS/loader at program startup;
@@ -54,7 +60,8 @@
 
 
 ; `equ` (equate) is an assembler directive that defines a symbolic constant.
-; This value is computed at assembly time, not runtime.
+; `equ` defines a symbol as a constant value (no memory address).
+; The values of constants are computed at assembly time, not at run time.
 stdout_fd equ 1
 sys_write equ 1
 sys_exit  equ 60
@@ -64,9 +71,8 @@ section .bss
 
 section .data
     msg: db 'Hello!', 0xa  ; not zero-terminated by default
-    ; `msg` is a label (a name for address).
-    ; `db` (define byte) is an assembly directive
-    ; which means "store one or more 1-byte values", not just "define 1-byte only".
+    ; `msg` is a data label (memory address representative).
+    ; `db` (define byte) is the assembly directive meaning "store one or more 1-byte values", not just "define 1-byte only".
     ; 0xA (hex) = 10 (dec) = '\n' (ASCII) = new line.
     ; Comma concatenates: "Hello", 0xa == "Hello!\n".
 
@@ -85,16 +91,17 @@ section .data
 section .text
     global _start
     ; The `global` directive adds the `_start` symbol into an object file.
-    ; It is the [main] entry point for a linker program.
-    ; The name `_start` is the default symbol for the "ld" linker.
+    ; It is the [main] entry point for a linker program (e.g., ld).
+    ; The `_start` name is the default one for the ld linker.
 
-_start:
+_start:  ; this is a code location label (also an address)
     ; --- system call: write(fd, buf, siz) ---
     mov rax, sys_write  ; 1 is the number for the `write` syscall (Linux/BSD)
     mov rdi, stdout_fd  ; argument 1 -> `write(1, ...)` where 1 is the file descriptor 1 (stdout)
     mov rsi, msg        ; argument 2 -> pointer to a buffer (here the string at the msg)
     mov rdx, msg_len    ; argument 3 length data
     syscall             ; invoke kernel (here, the `write(1, msg, msg_len)` syscall)
+
     ; --- system call: exit(0) ---
     mov rax, sys_exit   ; 60 is a syscall number for `exit`
     mov rdi, 0          ; argument 0 -> success return code/status
@@ -107,8 +114,8 @@ _start:
 ; For the `write(fd, buffer, size)` system call the ABI states that:
 ; - RSI stores the addres of a buffer (the second argument);
 ; - RDX holds the size (in bytes) to write (the third argument).
-; Also, syscall returns error codes in rax (negative values).
-; Feel free to read `man 2 syscalls` pages.
+; Also, syscall returns error codes (negative integers) in the RAX.
+; Feel free to read some `man 2 syscalls` pages.
 
 ; References:
 ; * [NASM Tutorial](https://cs.lmu.edu/~ray/notes/nasmtutorial/)
