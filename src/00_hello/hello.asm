@@ -1,14 +1,14 @@
-; The "hello.asm" [NASM] program for x64.
+; The "hello.asm" [NASM 2.16.01] program for x64 Linux/BSD.
 ;
 ; Some general-purpose registers (for 16-bit CPU versions):
-; - ax (accumulator) -> originally for arithmetic;
-; - bx (base) -> originally for base addressing (e.g. array bases);
-; - cx (counter) -> originally for loop counters (LOOP instruction) and shifts;
-; - dx (data) -> originally for I/O data or extended precision (e.g., 32-bit multiply/divide);
-; - si (source index) -> points to source data (string/memory ops);
-; - di (destination index) -> points to destination data (string/memory ops);
-; - sp (stack pointer) -> always points to the top of the stack;
-; - bp (base pointer) -> typically points to the base of the current function's stack frame.
+; - AX (accumulator) -> originally for arithmetic;
+; - BX (base) -> originally for base addressing (e.g. array bases);
+; - CX (counter) -> originally for loop counters (LOOP instruction) and shifts;
+; - DX (data) -> originally for I/O data or extended precision (e.g., 32-bit multiply/divide);
+; - SI (source index) -> points to source data (e.g., string/memory ops);
+; - DI (destination index) -> points to destination data (e.g., string/memory ops);
+; - SP (stack pointer) -> always points to the top of the stack;
+; - BP (base pointer) -> typically points to the base of the current function's stack frame.
 ;
 ; The above registers come with:
 ; - the E prefix for 32-bit (x86) versions (introduced with the Intel 80386);
@@ -53,6 +53,12 @@
 ; or "parcourez" the recipes in the Makefile.
 
 
+; `equ` (equate) is an assembler directive that defines a symbolic constant.
+; This value is computed at assembly time, not runtime.
+stdout_fd equ 1
+sys_write equ 1
+sys_exit  equ 60
+
 section .bss
     ; this section is intentionally left blank
 
@@ -70,12 +76,10 @@ section .data
     ; * the current output address in the section being assembled;
     ; * the address where the next instruction/data byte will be placed;
     ; Here, $ points to the position immediately after the 0xa byte,
-    ; which is the next free address for further "assemblering".
+    ; which is the next free address for further assemblying.
     ; So, the expression `$ - msg` computes the region/string length.
     ; ---
-    ; `equ` (equate) is an assembler directive that defines a symbolic constant.
-    ; This value is computed at assembly time, not runtime.
-    ; No memory allocation is made -> does not affect the $ value.
+    ; `equ` does not increment the value in the $ symbol.
 
 
 section .text
@@ -85,15 +89,26 @@ section .text
     ; The name `_start` is the default symbol for the "ld" linker.
 
 _start:
-    mov rax, 1        ; syscall number: 1 is write (Linux/BSD)
-    mov rdi, 1        ; fd (file descriptor) 1 = stdout
-    mov rsi, msg      ; buffer: pointer to the address of "msg"
-    mov rdx, msg_len  ; message length data
-    syscall           ; invoke kernel (int 0x80 for x86-only)
+    ; --- system call: write(fd, buf, siz) ---
+    mov rax, sys_write  ; 1 is the number for the `write` syscall (Linux/BSD)
+    mov rdi, stdout_fd  ; argument 1 -> `write(1, ...)` where 1 is the file descriptor 1 (stdout)
+    mov rsi, msg        ; argument 2 -> pointer to a buffer (here the string at the msg)
+    mov rdx, msg_len    ; argument 3 length data
+    syscall             ; invoke kernel (here, the `write(1, msg, msg_len)` syscall)
     ; --- system call: exit(0) ---
-    mov rax, 60       ; syscall number: 60 is exit
-    mov rdi, 0        ; status: 0 (success)
-    syscall           ; terminate process
+    mov rax, sys_exit   ; 60 is a syscall number for `exit`
+    mov rdi, 0          ; argument 0 -> success return code/status
+    syscall             ; terminate process (invoke the `exit(0)` syscall)
+
+; Notes concerning system calls.
+; ABI (Application binary interface) for `exit(code)` system call:
+; - RAX is for system call numbers (1 = write, 60 = exit).
+; - RDI is for a number that is the first argument for the syscall in the RAX.
+; For the `write(fd, buffer, size)` system call the ABI states that:
+; - RSI stores the addres of a buffer (the second argument);
+; - RDX holds the size (in bytes) to write (the third argument).
+; Also, syscall returns error codes in rax (negative values).
+; Feel free to read `man 2 syscalls` pages.
 
 ; References:
 ; * [NASM Tutorial](https://cs.lmu.edu/~ray/notes/nasmtutorial/)
