@@ -86,6 +86,17 @@
 ;     * "Symbol" -> a label that marks the start of the "Block".
 ;     * also "Block Storage Segment" or "Blank Static Storage"
 ;
+; Instructions in this program:
+; - MOV -> move (copy) data from a source to destination:
+;   - syntax: `mov destination, source`;
+;   - means `destination = source`;
+;   - the `destination` can be a register or a memory address;
+;   - the `source` can be a register, an address, or just an immediate value;
+;   - both operands cannot be memory locations -> `mov [mem1], [mem2]` is wrong;
+;   - operand sizes must match;
+;   - examples:
+;     - `mov rax, 2` - store 2 in the RAX
+;
 
 ; The `equ` assembler directive stands for equate and defines a constant.
 stdout_fd equ 1   ; file descriptor 1, or standard output stream (stdout)
