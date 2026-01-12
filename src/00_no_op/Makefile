@@ -1,10 +1,11 @@
 # GNU Make Manual: https://www.gnu.org/software/make/manual/make.html
 
-NAME := hello
+NAME := noop
 
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
 .PHONY: all clean fclean re run
 
+# ELF ???????
 $(NAME).o: $(NAME).asm
 	nasm -f elf64 $(NAME).asm -o $(NAME).o
 
