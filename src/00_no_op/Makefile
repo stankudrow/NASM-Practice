@@ -5,7 +5,7 @@ NAME := noop
 # https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
 .PHONY: all clean fclean re run
 
-# ELF ???????
+# https://ru.wikipedia.org/wiki/Executable_and_Linkable_Format
 $(NAME).o: $(NAME).asm
 	nasm -f elf64 $(NAME).asm -o $(NAME).o
 
