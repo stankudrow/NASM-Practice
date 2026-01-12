@@ -15,6 +15,15 @@
 ; A label name in brackets, `[my_label]` is the value at the address of the `my_label` symbol.
 ; So, the `[var]` syntax is about dereferencing the label (which is like a pointer).
 ;
+; The "../00_hello/hello.asm" file has notes about the MOV instruction.
+; Here you can find similar ecamples:
+; - `mov rax, [mem1]` -> store the value from the mem1 region into the RAX
+; - `mov [mem2], 3` -> store the 3 value at the mem2 address
+;
+; Caution!
+; `mov rbx, label` -> rbx holds the address of the label as a value.
+; `mov rbx, [label]` -> rbx stores the value fetched from the label address.
+;
 
 ; (symbolic) constants
 ; --- for system calls
