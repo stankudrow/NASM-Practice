@@ -92,9 +92,9 @@ section .bss
     buffer: resb BUFFER_SIZE
 
 section .text
-    global _start
+    global main
 
-_start:
+main:
     mov cl, NCHARS   ; initialise loop counter (NCHARS may be 0)
     test cl, cl  ; test if CL is 0 (0 and 0 is 0, so ZF=1)
     jz .quit  ; if ZF=1, just quit by jumping to the .quit label

@@ -35,6 +35,9 @@
 ; `mov rbx, label` -> rbx holds the address of the label.
 ; `mov rbx, [label]` -> rbx stores the value fetched from the `label` address.
 ;
+; A label with a colon (`:`) after it defines a code/data label.
+; Such labels (symbols) can be (de)referenced.
+;
 ; A CPU has falgs (also called "status flags" or "condition" codes),
 ; which are a set of single-bit (!) indicators in the CPU's flags register (R- or E- or just FLAGS).
 ; Most common flags to know for daily use in Assembly programming:
