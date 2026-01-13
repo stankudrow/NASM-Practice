@@ -23,13 +23,18 @@
 ; - 64-bit = 2**64 -> 16 EB (exabytes, theoretical).
 ;
 ; A CPU has internal memory storage locations, or registers.
-; The register covered here:
-; - RAX (Accumulator) -> originally for arithmetic;
-; - RDI (Destination Index) -> destination data address (mostly string/memory ops).
-;
 ; For x64, the above registers have the R (register) prefix.
-; For x86_32 systems the prefix is E (extended),
-; because they are extended versions of their 16-bit AX and DI variants.
+; For x86_32 systems the prefix is E (extended).
+; The registers covered here:
+; - RAX (Accumulator) -> general-purpose register for:
+;   - primary accumulator (arithmetic/logic ops);
+;   - function return value;
+;   - system call interface (codes of functions);
+;   - RAX > EAX > AX and AX (here X is "extended" for 16-bit version) consists of:
+;     - AH (high) = [15, 14, ..., 9, 8] bits segment;
+;     - AL (low) = [8, 7, ..., 1, 0] bits part;
+; - RDI (Destination Index) -> destination data address (mostly string/memory ops).
+;   - RDI > ESI > SI
 ;
 ; A crucial concept in Assembly language is "symbol".
 ; A symbol is a human‑readable name that represents:
