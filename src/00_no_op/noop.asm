@@ -1,122 +1,68 @@
 ; The "noop.asm" [NASM 2.16.01] program for x64 Linux/BSD.
 ;
 ; This program:
-; - is designed for the 64-bit CPUs or just x64;
-; - is written for the Linux/BSD operating systems;
-; - does no operation, therefore, no op;
-; - is good to be launched via the `make run` command (just for convenience).
+; - is written for Linux operating systems and 64-bit (x64) CPUs;
+; - does no operation, therefore, no op...actually it does :)
 ;
-; Architecture families for Intel processors:
-; - 64-bit = x64 (first, AMD64 with Athlon 64, then adopted by Intel as Intel 64, so x86_64);
-; - 32-bit = x86 (x86_32) or IA-32 (Intel Architecture) (Intel 80386 model intro);
-; - 16-bit = x86 (8086 -> ... -> 80286 models), or IA, or pre-IA-32;
+; Architecture families (for Intel processors):
+; - 64-bit = x64 (first, AMD64 with Athlon 64, then adopted by Intel as Intel 64, so x86_64)
+; - 32-bit = x86 (x86_32) or IA-32 (Intel Architecture) (Intel 80386 model intro)
+; - 16-bit = x86 (8086 -> ... -> 80286 models), or IA, or pre-IA-32
 ;
 ; The numbers above (XX-bit) define the size of a (machine) word.
-; A (machine) word is a unit of data a CPU can process natively in a single instruction cycle.
-; Historically, a word refers to the size of 16 bits, so:
-; - 32-bit word is a double word (dword);
-; - 64-bit word is a quadword (qword).
+; A (machine) word is a unit of data that a CPU can process natively in a single instruction cycle.
+; The word size limits the maximum addressable memory as `2**(word_size)` of RAM (random-access memory)
+; Historically:
+; - a 16-bit machine word is a word -> 2**16 -> 64KB;
+; - a 32-bit (machine) word is a double word (dword) -> 2**32 -> 4GB;
+; - a 64-bit (machine) word is a quadword (qword) -> 16 EB (exabytes, theoretical).
 ;
-; The word size limits the maximum addressable memory as `2**(word_size)`, so:
-; - 16-bit = 2**16 -> 64KB;
-; - 32-bit = 2**32 -> 4GB;
-; - 64-bit = 2**64 -> 16 EB (exabytes, theoretical).
+; Assembly language uses mnemonics - short, human‑readable symbolic codes.
+; Mnemonics represent (basic) machine‑level instructions
+; and it is easier to operate with them than raw binary codes.
 ;
 ; A CPU has internal memory storage locations, or registers.
-; For x64, the above registers have the R (register) prefix.
-; For x86_32 systems the prefix is E (extended).
+; In Assembly, mnemonics for registers start with the prefix:
+; - R (register) for x64, e.g. RAX -> [63, 62, ..., 1, 0] bits;
+; - E (extended) for x86_32, e.g. EAX -> [31, 30, ..., 1, 0] bits.
+; For "x16" no prefix is used, so it is just the AX register.
+; Potentially interesting details about the AX register:
+; - X stands for "extended";
+; - AX is "extended" because it is composed of:
+;   - AH (high) part -> [15, 14, ..., 9, 8] bits;
+;   - AL (low) part -> [8, 7, ..., 1, 0] bits.
+;
 ; The registers covered here:
-; - RAX (Accumulator) -> general-purpose register for:
-;   - primary accumulator (arithmetic/logic ops);
-;   - function return value;
-;   - system call interface (codes of functions);
-;   - RAX > EAX > AX and AX (here X is "extended" for 16-bit version) consists of:
-;     - AH (high) = [15, 14, ..., 9, 8] bits segment;
-;     - AL (low) = [8, 7, ..., 1, 0] bits part;
-; - RDI (Destination Index) -> destination data address (mostly string/memory ops).
-;   - RDI > ESI > SI
+; - RAX (Accumulator) -> general-purpose register:
+;   - Primary accumulator -> general storage for values.
+; - RDI (Destination Index):
+;   - Stores destination data address (mostly string/memory ops)
+;   - RDI (x64) > ESI (x32 > SI ("x16").
 ;
-; A crucial concept in Assembly language is "symbol".
-; A symbol is a human‑readable name that represents:
-; - a memory address (location/region);
-; - a constant value -> symbolic constant;
-; - code location (in a source file).
+; A system call (syscall) is like a function that requests "a favour" to OS.
 ;
-; Assembly language does not have variables like in high-level languages (C, Python etc.).
-; Instead, it operates with symbols which have two major subsets:
-; - (symbolic) constants -> literals or pure values as they are (mostly no memory addresses);
-; - labels -> names associated with memory addresses.
-;
-; Kinds of labels (roughly variables) by scope/visibility:
-; - global:
-;   - visible across multiple source files (translation units);
-;   - external linkage (other files can reference them via `extern`);
-; - static:
-;   - accessible in a source file where are defined (file-local);
-;   - internal linkage, i.e., cannot be referenced from other files.
-;
-; Typically, a program has sections (segments) that organise code and data.
-; The core sections are:
-; - `.text`:
-;   - holds executable instructions (code);
-;   - executable (CPU can jump to it and process);
-;   - typically read-only (design's and security's sakes);
-;
-; - `.data`:
-;   - stores explicitly initialised variables (non-zero values);
-;   - embedded in executable (increases file size);
-;   - loaded into memory as-is;
-;   - writable;
-;
-; - `.bss`:
-;   - for uninitialised/zero-initialised global/static variables;
-;   - originally "Block Started by Symbol";
-;   - BSS varaibles are zeroed by OS/loader at program startup;
-;   - only the BSS size itself is recorded in executable;
-;   - efficiency: saves disk space (no zero bytes in binary);
-;   - writable;
-;
-;   > Why "Block Started by Symbol"?
-;     * "Block" -> a contiguous memory region;
-;     * "Symbol" -> a label that marks the start of the "Block".
-;     * also "Block Storage Segment" or "Blank Static Storage"
-;
-; Instructions in this program:
-; - MOV -> move (copy) data from a source to destination:
-;   - syntax: `mov destination, source`;
-;   - means `destination = source`;
-;   - the `destination` can be a register or a memory address;
-;   - the `source` can be a register, an address, or just an immediate value;
-;   - both operands cannot be memory locations -> `mov [mem1], [mem2]` is wrong;
-;   - operand sizes must match -> word with double word is wrong;
-;   - examples:
-;     - `mov rax, 2` - store 2 in the RAX
-;     - `mov rdi, buffer` - store buffer label (=address) in the RDI
+; Abundance of comments in Assembly programs is vital.
 ;
 
-; The `equ` assembler directive stands for equate and defines a constant.
-exit_syscall    equ 60  ; `exit` syscall code (Linux/BSD)
-success_retcode equ 0   ; `exit(0)` means "quit normally"
+; The `equ` assembler directive stands for "equate" and defines a constant.
+EXIT_SYSCALL    equ 60  ; `exit` system call code (Linux/BSD)
+SUCCESS_RETCODE equ 0   ; `exit(0)` means "quit normally"
 
-; section .bss  ; no need for this segment yet
-
-; section .data  ; no need this segment yet
-
-section .text  ; code
-    global _start
-    ; The `global` directive makes the `_start` label global.
-    ; It means that `_start` will be visible outside the object file.
-    ; It must be global because it is meant to be the program main entry point.
+; The actual code is written in the `.text` section
+section .text
+    global _start  ; makes the _start label default
     ; The `_start` name is default for the "ld" linker.
+    ; This is the entry point for the program and it must be so for now.
 
 _start:
     ; --- `exit(status_code)` syscall ---
-    ; ABI (Application binary interface) for `exit(code)` system call:
+    ; ABI (Application binary interface) for the `exit(code)` syscall:
     ; - RAX -> system call integer code (60 = exit);
     ; - RDI -> the first and sole argument for the `exit`.
-    mov rax, exit_syscall
-    mov rdi, success_retcode
-    syscall  ; invoke the `exit(0)` syscall (terminate the process/program)
+    ; -----------------------------------
+    mov rax, EXIT_SYSCALL
+    mov rdi, SUCCESS_RETCODE
+    syscall  ; invoke the `exit(0)` syscall (terminate)
 
 ; Feel free to read some `man 2 syscalls` pages.
 
